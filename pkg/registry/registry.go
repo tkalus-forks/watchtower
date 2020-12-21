@@ -1,6 +1,9 @@
 package registry
 
 import (
+	"github.com/containrrr/watchtower/pkg/registry/helpers"
+	watchtower_types "github.com/containrrr/watchtower/pkg/types"
+	ref "github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	log "github.com/sirupsen/logrus"
 )
@@ -30,4 +33,24 @@ func GetPullOptions(imageName string) (types.ImagePullOptions, error) {
 func DefaultAuthHandler() (string, error) {
 	log.Debug("Authentication request was rejected. Trying again without authentication")
 	return "", nil
+}
+
+// WarnOnAPIComsumption will return true if the registry is knonw-expected to respond to HTTP HEAD in checking the container digest; will return false if behavior is unknown.
+func WarnOnAPIComsumption(container watchtower_types.Container) bool {
+
+	normalizedName, err := ref.ParseNormalizedNamed(container.ImageName())
+	if err != nil {
+		return false
+	}
+
+	container_host, err := helpers.NormalizeRegistry(normalizedName.String())
+	if err != nil {
+		return false
+	}
+
+	if container_host == "index.docker.io" {
+		return true
+	}
+
+	return false
 }
